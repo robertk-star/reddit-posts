@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Use harmless build-time placeholders so Next.js can compile without production env vars.
+// Runtime will use the real Vercel/Supabase values.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co";
 const serviceRoleKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "build-time-placeholder";
 
