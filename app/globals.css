@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+:root {
+  --background: #f7f8fb;
+  --foreground: #172033;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+input, textarea, select {
+  color: #172033;
+}

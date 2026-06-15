@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { requireAdmin, isAdminRequest } from "@/lib/adminAuth";
 import { optionalEnv } from "@/lib/env";
 import { scoreThread } from "@/lib/relevance";
 import { searchSubredditPosts } from "@/lib/reddit";
