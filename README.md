@@ -1,1 +1,137 @@
-# reddit-posts
+# Opportunity Radar Phase 1
+
+A standalone Next.js + Supabase MVP that scans Reddit for relevant conversations, scores candidate threads, generates Claude draft replies, and keeps posting manual/human-reviewed.
+
+## What this build includes
+
+- Admin login
+- Project setup
+- Voice profile setup
+- Reddit monitoring rules
+- Manual Reddit scan endpoint
+- Daily Vercel Cron scan route
+- Candidate thread queue
+- Relevance score and risk level
+- Claude draft generation
+- Manual posting workflow
+- Posted/skipped/snoozed action tracking
+- DBS starter seed project and Reddit rule
+
+## What this build does not do
+
+- It does not auto-post to Reddit.
+- It does not store Reddit passwords.
+- It does not scrape Quora.
+- It does not use a browser-side Supabase client.
+- It does not support multiple admin users yet.
+
+## Install locally
+
+```bash
+npm install
+npm run dev
+```
+
+## Supabase SQL
+
+Run this migration in Supabase SQL Editor:
+
+```text
+supabase/migrations/001_phase1_opportunity_radar.sql
+```
+
+This creates all Phase 1 tables and seeds:
+
+- Reddit source
+- DBS starter project
+- DBS voice profile
+- DBS starter Reddit monitoring rule
+
+## Vercel environment variables
+
+Add these in Vercel before testing:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SECRET_KEY=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+ADMIN_SESSION_SECRET=
+REDDIT_CLIENT_ID=
+REDDIT_CLIENT_SECRET=
+REDDIT_USER_AGENT=OpportunityRadar/0.1 by your_reddit_username
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-haiku-4-5
+CRON_SECRET=
+NEXT_PUBLIC_APP_URL=
+```
+
+Legacy Supabase fallback:
+
+```text
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+The app checks `SUPABASE_SECRET_KEY` first, then falls back to `SUPABASE_SERVICE_ROLE_KEY`.
+
+## Reddit setup
+
+Create a Reddit app from your Reddit account. For Phase 1, this app uses read-only application credentials to search Reddit. Use a descriptive User-Agent, for example:
+
+```text
+OpportunityRadar/0.1 by robertk
+```
+
+The app searches subreddit posts with:
+
+```text
+/r/{subreddit}/search.json?restrict_sr=1&sort=new&t=week
+```
+
+## Admin URL
+
+```text
+/admin
+```
+
+## How to test
+
+1. Run the Supabase SQL migration.
+2. Add all Vercel environment variables.
+3. Deploy the app.
+4. Go to `/admin`.
+5. Log in with `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
+6. Confirm the seeded DBS project and Reddit rule are visible.
+7. Click `Scan Reddit Now`.
+8. Candidate threads should appear if Reddit returns matching posts.
+9. Click `Generate Draft` on a candidate.
+10. Review the draft, open the Reddit thread manually, and copy/edit/post manually.
+11. Mark the item as posted, skipped, or snoozed.
+
+## Vercel Cron
+
+`vercel.json` schedules a daily scan at 13:00 UTC.
+
+Vercel Cron will call:
+
+```text
+/api/scan/reddit
+```
+
+The endpoint accepts:
+
+- Admin cookie from the dashboard
+- `x-cron-secret: CRON_SECRET`
+- `Authorization: Bearer CRON_SECRET`
+- `?secret=CRON_SECRET`
+
+## Recommended next build
+
+Phase 2 should add:
+
+- UTM campaign builder per project/source
+- Better AI relevance scoring before inserting candidates
+- Draft copy button
+- Full project detail page
+- RSS/manual source type support
+- Basic traffic/result tracking
