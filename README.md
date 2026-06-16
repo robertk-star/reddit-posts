@@ -9,7 +9,7 @@ A standalone Next.js + Supabase app that scans Reddit for relevant conversations
 - Voice profile setup
 - Reddit monitoring rules
 - Manual Reddit scan endpoint
-- Daily Vercel Cron scan route
+- GitHub Actions scheduled scan workflow
 - Candidate thread queue
 - Relevance score and risk level
 - OpenAI draft generation
@@ -75,6 +75,31 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 The app checks `SUPABASE_SECRET_KEY` first, then falls back to `SUPABASE_SERVICE_ROLE_KEY`.
 
+## GitHub Actions scheduled scan
+
+Vercel Cron is not used. The scheduled scan runs from GitHub Actions using:
+
+```text
+.github/workflows/reddit-scan.yml
+```
+
+The workflow runs daily at:
+
+```text
+13:17 UTC
+```
+
+It also supports manual runs from GitHub Actions with `workflow_dispatch`.
+
+Add these GitHub repository secrets:
+
+```text
+OPPORTUNITY_RADAR_URL=https://your-vercel-site.vercel.app
+CRON_SECRET=same-value-you-put-in-vercel-cron-secret
+```
+
+`CRON_SECRET` must match the Vercel environment variable named `CRON_SECRET` because the app endpoint checks it before running the scan.
+
 ## Reddit setup
 
 Create a Reddit app from your Reddit account. For Phase 1, this app uses read-only application credentials to search Reddit. Use a descriptive User-Agent, for example:
@@ -104,25 +129,19 @@ The app searches subreddit posts with:
 
 1. Run the Supabase SQL migration.
 2. Add all Vercel environment variables.
-3. Deploy the app.
-4. Go to `/admin`.
-5. Log in with `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
-6. Confirm the seeded DBS project and Reddit rule are visible.
-7. Click `Scan Reddit Now`.
-8. Candidate threads should appear if Reddit returns matching posts.
-9. Click `Generate Draft` on a candidate.
-10. Review the draft, open the Reddit thread manually, and copy/edit/post manually.
-11. Mark the item as posted, skipped, or snoozed.
+3. Add the two GitHub repository secrets.
+4. Deploy the app.
+5. Go to `/admin`.
+6. Log in with `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
+7. Confirm the seeded DBS project and Reddit rule are visible.
+8. Click `Scan Reddit Now`.
+9. Candidate threads should appear if Reddit returns matching posts.
+10. Click `Generate Draft` on a candidate.
+11. Review the draft, open the Reddit thread manually, and copy/edit/post manually.
+12. Mark the item as posted, skipped, or snoozed.
+13. Open GitHub Actions and manually run `Reddit Opportunity Scan` once to confirm the scheduled scan works.
 
-## Vercel Cron
-
-`vercel.json` schedules a daily scan at 13:00 UTC.
-
-Vercel Cron will call:
-
-```text
-/api/scan/reddit
-```
+## Scan endpoint security
 
 The endpoint accepts:
 
