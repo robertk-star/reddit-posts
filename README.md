@@ -1,6 +1,6 @@
-# Opportunity Radar Phase 1
+# Opportunity Radar
 
-A standalone Next.js + Supabase MVP that scans Reddit for relevant conversations, scores candidate threads, generates Claude draft replies, and keeps posting manual/human-reviewed.
+A standalone Next.js + Supabase app that scans Reddit for relevant conversations, scores candidate threads, generates OpenAI draft replies, and keeps posting manual/human-reviewed.
 
 ## What this build includes
 
@@ -12,10 +12,11 @@ A standalone Next.js + Supabase MVP that scans Reddit for relevant conversations
 - Daily Vercel Cron scan route
 - Candidate thread queue
 - Relevance score and risk level
-- Claude draft generation
+- OpenAI draft generation
 - Manual posting workflow
 - Posted/skipped/snoozed action tracking
 - DBS starter seed project and Reddit rule
+- Phase 2 tools at `/admin/phase2`
 
 ## What this build does not do
 
@@ -60,8 +61,8 @@ ADMIN_SESSION_SECRET=
 REDDIT_CLIENT_ID=
 REDDIT_CLIENT_SECRET=
 REDDIT_USER_AGENT=OpportunityRadar/0.1 by your_reddit_username
-ANTHROPIC_API_KEY=
-ANTHROPIC_MODEL=claude-haiku-4-5
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5.4-mini
 CRON_SECRET=
 NEXT_PUBLIC_APP_URL=
 ```
@@ -88,10 +89,15 @@ The app searches subreddit posts with:
 /r/{subreddit}/search.json?restrict_sr=1&sort=new&t=week
 ```
 
-## Admin URL
+## Admin URLs
 
 ```text
 /admin
+/admin/phase2
+/admin/candidates
+/admin/projects
+/admin/rules
+/admin/tools/utm
 ```
 
 ## How to test
@@ -127,11 +133,10 @@ The endpoint accepts:
 
 ## Recommended next build
 
-Phase 2 should add:
+Phase 3 should add:
 
-- UTM campaign builder per project/source
 - Better AI relevance scoring before inserting candidates
-- Draft copy button
-- Full project detail page
-- RSS/manual source type support
+- AI recommendation: answer only, soft link, no link, or skip
+- Duplicate/similar thread detection
+- Response quality scoring
 - Basic traffic/result tracking
