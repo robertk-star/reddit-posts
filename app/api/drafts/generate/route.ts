@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/adminAuth";
 import { optionalEnv, requireEnv } from "@/lib/env";
@@ -28,8 +28,8 @@ export async function POST(request: Request) {
       .eq("project_id", candidate.project_id)
       .maybeSingle();
 
-    const anthropic = new Anthropic({ apiKey: requireEnv("ANTHROPIC_API_KEY") });
-    const model = optionalEnv("ANTHROPIC_MODEL", "claude-haiku-4-5");
+    const client = new OpenAI({ apiKey: requireEnv("OPENAI_API_KEY") });
+    const model = optionalEnv("OPENAI_MODEL", "gpt-5.4-mini");
     const prompt = buildDraftPrompt({
       projectName: candidate.projects?.name || "Project",
       siteUrl: candidate.projects?.site_url || "",
@@ -42,17 +42,13 @@ export async function POST(request: Request) {
       whyRelevant: candidate.why_relevant
     });
 
-    const message = await anthropic.messages.create({
+    const response = await client.responses.create({
       model,
-      max_tokens: 900,
-      temperature: 0.6,
-      messages: [{ role: "user", content: prompt }]
+      input: prompt,
+      max_output_tokens: 900
     });
 
-    const draftText = message.content
-      .map((block) => (block.type === "text" ? block.text : ""))
-      .join("\n")
-      .trim();
+    const draftText = response.output_text.trim();
 
     const { error: insertError } = await supabaseAdmin.from("draft_versions").insert({
       candidate_thread_id: candidateThreadId,
