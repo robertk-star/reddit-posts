@@ -1,0 +1,33 @@
+name: Reddit Opportunity Scan
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs daily at 13:17 UTC. Avoids the top of the hour when scheduled jobs can be delayed.
+    - cron: "17 13 * * *"
+
+jobs:
+  scan:
+    name: Trigger Reddit scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.OPPORTUNITY_RADAR_URL }}" ]; then
+            echo "Missing GitHub secret: OPPORTUNITY_RADAR_URL"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "Missing GitHub secret: CRON_SECRET"
+            exit 1
+          fi
+
+      - name: Call scan endpoint
+        run: |
+          BASE_URL="${{ secrets.OPPORTUNITY_RADAR_URL }}"
+          BASE_URL="${BASE_URL%/}"
+          echo "Triggering Reddit scan at ${BASE_URL}/api/scan/reddit"
+          curl --fail --show-error --silent --request POST \
+            --header "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --header "Accept: application/json" \
+            "${BASE_URL}/api/scan/reddit"
