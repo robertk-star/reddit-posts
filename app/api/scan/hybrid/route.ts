@@ -3,6 +3,7 @@ import { isAdminRequest } from "@/lib/adminAuth";
 import { optionalEnv } from "@/lib/env";
 import { scanSourceUrl } from "@/lib/hybridWeb";
 import { scoreThread } from "@/lib/relevance";
+import { scoreResultQuality } from "@/lib/resultQuality";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 async function authorized(request: Request) {
@@ -26,6 +27,7 @@ async function runHybridScan(profileId?: string | null) {
 
   for (const profile of profiles || []) {
     const maxSources = Math.max(1, Number(profile.max_sources_per_scan || 10));
+    const minQuality = Number(profile.min_result_quality_score ?? 0.2);
     const sourcesToScan = (profile.source_domains || []).slice(0, maxSources);
     const { data: run } = await supabaseAdmin.from("web_scan_runs").insert({ search_profile_id: profile.id, status: "running" }).select("id").single();
     let checked = 0;
@@ -41,15 +43,22 @@ async function runHybridScan(profileId?: string | null) {
         found += links.length;
         for (const link of links) {
           const { data: existingByHash } = await supabaseAdmin.from("candidate_threads").select("id").eq("url_hash", link.externalId).maybeSingle();
-          if (existingByHash?.id) {
-            skipped += 1;
-            continue;
-          }
+          if (existingByHash?.id) { skipped += 1; continue; }
           const { data: existingByUrl } = await supabaseAdmin.from("candidate_threads").select("id").eq("url", link.url).maybeSingle();
-          if (existingByUrl?.id) {
-            skipped += 1;
-            continue;
-          }
+          if (existingByUrl?.id) { skipped += 1; continue; }
+
+          const quality = scoreResultQuality({
+            url: link.url,
+            title: link.title,
+            description: link.pageDescription,
+            preview: link.pagePreview,
+            keywords: profile.keywords || [],
+            excludedTerms: profile.excluded_terms || [],
+            allowlist: profile.domain_allowlist || [],
+            blocklist: profile.domain_blocklist || []
+          });
+          if (quality.blocked || quality.score < minQuality) { skipped += 1; continue; }
+
           const bodyText = link.pagePreview || link.pageDescription || link.url;
           const relevance = scoreThread({ title: link.title, body: bodyText, keywords: profile.keywords || [] });
           const { error } = await supabaseAdmin.from("candidate_threads").insert({
@@ -75,14 +84,13 @@ async function runHybridScan(profileId?: string | null) {
             page_description: link.pageDescription,
             page_preview: link.pagePreview,
             page_fetched_at: link.pageFetchedAt,
+            result_quality_score: quality.score,
+            result_quality_reason: quality.reason,
             web_scan_run_id: run?.id,
             last_checked_at: new Date().toISOString()
           });
-          if (error) {
-            skipped += 1;
-          } else {
-            created += 1;
-          }
+          if (error) skipped += 1;
+          else created += 1;
         }
       } catch (error: any) {
         errorMessage += `${sourceValue}: ${error.message || String(error)}\n`;
@@ -91,20 +99,9 @@ async function runHybridScan(profileId?: string | null) {
 
     const status = errorMessage ? "error" : "success";
     if (run?.id) {
-      await supabaseAdmin.from("web_scan_runs").update({
-        completed_at: new Date().toISOString(),
-        sources_checked: checked,
-        urls_found: found,
-        candidates_created: created,
-        status,
-        error_message: errorMessage || null
-      }).eq("id", run.id);
+      await supabaseAdmin.from("web_scan_runs").update({ completed_at: new Date().toISOString(), sources_checked: checked, urls_found: found, candidates_created: created, status, error_message: errorMessage || null }).eq("id", run.id);
     }
-    await supabaseAdmin.from("search_profiles").update({
-      last_web_scan_at: new Date().toISOString(),
-      last_web_scan_status: `${status}: ${created} saved, ${skipped} skipped`,
-      last_web_scan_error: errorMessage || null
-    }).eq("id", profile.id);
+    await supabaseAdmin.from("search_profiles").update({ last_web_scan_at: new Date().toISOString(), last_web_scan_status: `${status}: ${created} saved, ${skipped} skipped`, last_web_scan_error: errorMessage || null }).eq("id", profile.id);
 
     totalFound += found;
     totalCreated += created;
