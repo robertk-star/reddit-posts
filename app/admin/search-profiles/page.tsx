@@ -35,49 +35,16 @@ export default async function SearchProfilesPage({ searchParams }: { searchParam
             <h2 className="text-xl font-bold">Add Search Profile</h2>
             <p className="mt-1 text-sm text-slate-600">Each profile gets its own keywords, source domains, Google Alert queries, and voice rules.</p>
             <form action="/api/admin/search-profiles" method="post" className="mt-5 grid gap-4">
-              <label className="grid gap-1 text-sm font-semibold">
-                Profile name
-                <input name="name" placeholder="Disability Benefits" className="rounded-xl border border-slate-300 px-4 py-3 font-normal" required />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Project
-                <select name="project_id" className="rounded-xl border border-slate-300 px-4 py-3 font-normal">
-                  <option value="">No project / general</option>
-                  {(projects || []).map((project: any) => <option key={project.id} value={project.id}>{project.name}</option>)}
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Description
-                <textarea name="description" placeholder="What this search is for" className="min-h-20 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Search intent
-                <textarea name="intent" placeholder="Find people asking about..." className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Link to promote
-                <input name="link_to_promote" placeholder="https://example.com/resource" className="rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Voice instructions
-                <textarea name="voice_instructions" placeholder="Helpful, practical, not legal advice..." className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Keywords, one per line
-                <textarea name="keywords" placeholder={'SSDI denied\napply for disability\ndisability application checklist'} className="min-h-32 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Exclude terms, one per line
-                <textarea name="excluded_terms" placeholder={'guaranteed approval\nfree background check'} className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Sources/domains, one per line
-                <textarea name="source_domains" placeholder={'reddit.com/r/SocialSecurity\nquora.com\nssdfacts.com/forum'} className="min-h-32 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
-              <label className="grid gap-1 text-sm font-semibold">
-                Google Alert queries, one per line
-                <textarea name="google_alert_queries" placeholder={'"SSDI denied"\n"background check taking too long"'} className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
-              </label>
+              <label className="grid gap-1 text-sm font-semibold">Profile name<input name="name" placeholder="Disability Benefits" className="rounded-xl border border-slate-300 px-4 py-3 font-normal" required /></label>
+              <label className="grid gap-1 text-sm font-semibold">Project<select name="project_id" className="rounded-xl border border-slate-300 px-4 py-3 font-normal"><option value="">No project / general</option>{(projects || []).map((project: any) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
+              <label className="grid gap-1 text-sm font-semibold">Description<textarea name="description" placeholder="What this search is for" className="min-h-20 rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
+              <label className="grid gap-1 text-sm font-semibold">Search intent<textarea name="intent" placeholder="Find people asking about..." className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
+              <label className="grid gap-1 text-sm font-semibold">Link to promote<input name="link_to_promote" placeholder="https://example.com/resource" className="rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
+              <label className="grid gap-1 text-sm font-semibold">Voice instructions<textarea name="voice_instructions" placeholder="Helpful, practical, not legal advice..." className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
+              <label className="grid gap-1 text-sm font-semibold">Keywords, one per line<textarea name="keywords" placeholder={'SSDI denied\napply for disability\ndisability application checklist'} className="min-h-32 rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
+              <label className="grid gap-1 text-sm font-semibold">Exclude terms, one per line<textarea name="excluded_terms" placeholder={'guaranteed approval\nfree background check'} className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
+              <label className="grid gap-1 text-sm font-semibold">Sources/domains, one per line<textarea name="source_domains" placeholder={'reddit.com/r/SocialSecurity\nquora.com\nssdfacts.com/forum'} className="min-h-32 rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
+              <label className="grid gap-1 text-sm font-semibold">Google Alert queries, one per line<textarea name="google_alert_queries" placeholder={'"SSDI denied"\n"background check taking too long"'} className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" /></label>
               <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="active" defaultChecked /> Active</label>
               <button className="rounded-xl bg-cyan-600 px-4 py-3 font-semibold text-white hover:bg-cyan-700">Create Search Profile</button>
             </form>
@@ -91,20 +58,13 @@ export default async function SearchProfilesPage({ searchParams }: { searchParam
                 <article key={profile.id} className="rounded-2xl border border-slate-200 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide">
-                        <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-cyan-800">{profile.projects?.name || "General"}</span>
-                        <span className={profile.active ? "rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-800" : "rounded-full bg-slate-100 px-2.5 py-1 text-slate-700"}>{profile.active ? "Active" : "Paused"}</span>
-                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide"><span className="rounded-full bg-cyan-100 px-2.5 py-1 text-cyan-800">{profile.projects?.name || "General"}</span><span className={profile.active ? "rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-800" : "rounded-full bg-slate-100 px-2.5 py-1 text-slate-700"}>{profile.active ? "Active" : "Paused"}</span></div>
                       <h3 className="mt-3 text-lg font-bold">{profile.name}</h3>
                       <p className="mt-1 text-sm text-slate-600">{profile.description || "No description yet."}</p>
                     </div>
-                    <Link href={`/admin/search-profiles/${profile.id}`} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Edit</Link>
+                    <div className="flex flex-wrap gap-2"><Link href={`/admin/search-profiles/${profile.id}`} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Edit</Link><Link href={`/admin/search-profiles/${profile.id}/quality`} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Quality</Link></div>
                   </div>
-                  <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-                    <div className="rounded-xl bg-slate-50 p-3"><strong>Keywords:</strong><br />{(profile.keywords || []).slice(0, 6).join(", ") || "—"}</div>
-                    <div className="rounded-xl bg-slate-50 p-3"><strong>Sources:</strong><br />{(profile.source_domains || []).slice(0, 6).join(", ") || "—"}</div>
-                    <div className="rounded-xl bg-slate-50 p-3 md:col-span-2"><strong>Google Alerts:</strong><br />{(profile.google_alert_queries || []).slice(0, 6).join(", ") || "—"}</div>
-                  </div>
+                  <div className="mt-4 grid gap-3 text-sm md:grid-cols-2"><div className="rounded-xl bg-slate-50 p-3"><strong>Keywords:</strong><br />{(profile.keywords || []).slice(0, 6).join(", ") || "—"}</div><div className="rounded-xl bg-slate-50 p-3"><strong>Sources:</strong><br />{(profile.source_domains || []).slice(0, 6).join(", ") || "—"}</div><div className="rounded-xl bg-slate-50 p-3 md:col-span-2"><strong>Google Alerts:</strong><br />{(profile.google_alert_queries || []).slice(0, 6).join(", ") || "—"}</div></div>
                 </article>
               ))}
             </div>
