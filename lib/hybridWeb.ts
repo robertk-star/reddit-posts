@@ -51,12 +51,7 @@ function normalizeUrl(raw: string, baseUrl: string) {
 }
 
 function textFromHtml(value: string) {
-  return decodeHtml(
-    value
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-  );
+  return decodeHtml(value.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " "));
 }
 
 function attr(html: string, pattern: RegExp) {
@@ -120,7 +115,10 @@ export async function scanSourceUrl(sourceValue: string, keywords: string[], exc
     seen.add(normalized);
     const lowerUrl = normalized.toLowerCase();
     if (lowerExcluded.some((term) => lowerUrl.includes(term) || pageText.includes(term))) continue;
-    const keywordMatch = lowerKeywords.length === 0 || lowerKeywords.some((term) => lowerUrl.includes(term.replaceAll(" ", "-")) || lowerUrl.includes(term) || pageText.includes(term));
+    const keywordMatch = lowerKeywords.length === 0 || lowerKeywords.some((term) => {
+      const dashed = term.split(" ").join("-");
+      return lowerUrl.includes(dashed) || lowerUrl.includes(term) || pageText.includes(term);
+    });
     if (!keywordMatch) continue;
 
     const parsed = new URL(normalized);
