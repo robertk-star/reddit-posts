@@ -33,6 +33,7 @@ export default async function AdminPage() {
   const cards = [
     ["Run Hybrid Scan", "/admin/hybrid-scanner", "Scan active Search Profiles and create new opportunities."],
     ["Opportunities", "/admin/candidates", "Filter, draft, copy, skip, snooze, or mark items posted."],
+    ["Quality Review", "/admin/quality", "Review quality scores, source hosts, and enrichment status."],
     ["Google Alerts", "/admin/google-alerts", "Paste Google Alert results and dedupe them into the queue."],
     ["Search Profiles", "/admin/search-profiles", "Manage separate searches for Disability, Background Screening, and more."],
     ["Monitoring Rules", "/admin/rules", "Add, edit, pause, or delete source rules."],
