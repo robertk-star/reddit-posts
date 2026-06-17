@@ -1,14 +1,13 @@
-name: Reddit Opportunity Scan
+name: Opportunity Radar Scheduled Scan
 
 on:
   workflow_dispatch:
   schedule:
-    # Runs daily at 13:17 UTC. Avoids the top of the hour when scheduled jobs can be delayed.
     - cron: "17 13 * * *"
 
 jobs:
   scan:
-    name: Trigger Reddit scan
+    name: Trigger hybrid web scan
     runs-on: ubuntu-latest
     steps:
       - name: Validate secrets
@@ -22,12 +21,12 @@ jobs:
             exit 1
           fi
 
-      - name: Call scan endpoint
+      - name: Call hybrid scan endpoint
         run: |
           BASE_URL="${{ secrets.OPPORTUNITY_RADAR_URL }}"
           BASE_URL="${BASE_URL%/}"
-          echo "Triggering Reddit scan at ${BASE_URL}/api/scan/reddit"
-          curl --fail --show-error --silent --request POST \
+          echo "Triggering hybrid scan at ${BASE_URL}/api/scan/hybrid"
+          curl --fail --show-error --silent --request GET \
             --header "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --header "Accept: application/json" \
-            "${BASE_URL}/api/scan/reddit"
+            "${BASE_URL}/api/scan/hybrid"
