@@ -50,7 +50,8 @@ async function runHybridScan(profileId?: string | null) {
             skipped += 1;
             continue;
           }
-          const relevance = scoreThread({ title: link.title, body: link.url, keywords: profile.keywords || [] });
+          const bodyText = link.pagePreview || link.pageDescription || link.url;
+          const relevance = scoreThread({ title: link.title, body: bodyText, keywords: profile.keywords || [] });
           const { error } = await supabaseAdmin.from("candidate_threads").insert({
             monitoring_rule_id: null,
             source_id: source?.id,
@@ -60,8 +61,8 @@ async function runHybridScan(profileId?: string | null) {
             url_hash: link.externalId,
             url: link.url,
             title: link.title,
-            body_excerpt: `Found by Hybrid Web Scanner from ${link.sourceUrl}`,
-            full_body: `${link.url}\n${profile.intent || ""}`,
+            body_excerpt: link.pageDescription || link.pagePreview || `Found by Hybrid Web Scanner from ${link.sourceUrl}`,
+            full_body: `${link.url}\n${link.pageTitle}\n${link.pageDescription}\n${link.pagePreview}\n${profile.intent || ""}`,
             author: "Hybrid Web Scanner",
             relevance_score: relevance.score,
             why_relevant: `Hybrid scan match. ${relevance.why}`,
@@ -69,6 +70,11 @@ async function runHybridScan(profileId?: string | null) {
             status: "new",
             imported_from: "hybrid_web",
             scanned_from: link.sourceUrl,
+            source_host: link.host,
+            page_title: link.pageTitle,
+            page_description: link.pageDescription,
+            page_preview: link.pagePreview,
+            page_fetched_at: link.pageFetchedAt,
             web_scan_run_id: run?.id,
             last_checked_at: new Date().toISOString()
           });
