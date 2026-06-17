@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const { data: source, error: sourceError } = await supabaseAdmin.from("sources").select("id").eq("name", "Google Alerts").single();
     if (sourceError) throw sourceError;
 
-    const extracted = extractGoogleAlertUrls(rawContent);
+    const extracted = await extractGoogleAlertUrls(rawContent);
     const { data: importRow, error: importError } = await supabaseAdmin
       .from("google_alert_imports")
       .insert({ search_profile_id: searchProfileId, project_id: profile.project_id, raw_content: rawContent, notes, urls_found: extracted.length, candidates_created: 0 })
@@ -35,9 +35,9 @@ export async function POST(request: Request) {
     const excludedTerms: string[] = profile.excluded_terms || [];
 
     for (const item of extracted) {
-      const testText = `${item.title} ${item.url} ${profile.intent || ""}`.toLowerCase();
+      const testText = `${item.title} ${item.url} ${item.pageDescription || ""} ${profile.intent || ""}`.toLowerCase();
       if (excludedTerms.some((term) => term && testText.includes(term.toLowerCase()))) continue;
-      const relevance = scoreThread({ title: item.title, body: `${item.url}\n${profile.intent || ""}`, keywords });
+      const relevance = scoreThread({ title: item.title, body: item.pagePreview || item.pageDescription || item.url, keywords });
 
       const { error: upsertError } = await supabaseAdmin.from("candidate_threads").upsert({
         monitoring_rule_id: null,
@@ -45,16 +45,22 @@ export async function POST(request: Request) {
         project_id: profile.project_id,
         search_profile_id: searchProfileId,
         external_id: item.externalId,
+        url_hash: item.externalId,
         url: item.url,
         title: item.title,
-        body_excerpt: `Imported alert link for ${profile.name}. Source: ${item.host}`,
-        full_body: rawContent.slice(0, 4000),
+        body_excerpt: item.pageDescription || item.pagePreview || `Imported alert link for ${profile.name}. Source: ${item.host}`,
+        full_body: `${item.url}\n${item.pageTitle || ""}\n${item.pageDescription || ""}\n${item.pagePreview || ""}`,
         author: "Google Alerts",
         relevance_score: relevance.score,
         why_relevant: `Imported alert result. ${relevance.why}`,
         risk_level: relevance.riskLevel,
         status: "new",
         imported_from: "google_alerts",
+        source_host: item.host,
+        page_title: item.pageTitle,
+        page_description: item.pageDescription,
+        page_preview: item.pagePreview,
+        page_fetched_at: item.pageFetchedAt,
         import_batch_id: importRow.id,
         last_checked_at: new Date().toISOString()
       }, { onConflict: "source_id,external_id", ignoreDuplicates: false });
