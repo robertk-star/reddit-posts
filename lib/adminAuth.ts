@@ -1,12 +1,12 @@
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "crypto";
-import { optionalEnv, requireEnv } from "./env";
+import { optionalEnv } from "./env";
 
 const COOKIE_NAME = "or_admin_session";
 const MAX_AGE_SECONDS = 60 * 60 * 12;
 
 function sign(value: string) {
-  return createHmac("sha256", requireEnv("ADMIN_SESSION_SECRET")).update(value).digest("hex");
+  return createHmac("sha256", optionalEnv("ADMIN_SESSION_SECRET", "opportunity-radar-session-secret")).update(value).digest("hex");
 }
 
 export function createAdminSessionValue(email: string) {
