@@ -31,6 +31,9 @@ export async function POST(request: Request, { params }: Params) {
     const linkToPromote = String(form.get("link_to_promote") || "").trim();
     const voiceInstructions = String(form.get("voice_instructions") || "").trim();
     const active = String(form.get("active") || "") === "on";
+    const webScanEnabled = String(form.get("web_scan_enabled") || "") === "on";
+    const webScanFrequency = String(form.get("web_scan_frequency") || "daily").trim();
+    const maxSourcesPerScan = Math.max(1, Number(form.get("max_sources_per_scan") || 10));
 
     if (!name) {
       return NextResponse.redirect(new URL(`/admin/search-profiles/${id}?error=missing-name`, request.url), { status: 303 });
@@ -50,6 +53,9 @@ export async function POST(request: Request, { params }: Params) {
         source_domains: lines(form.get("source_domains")),
         google_alert_queries: lines(form.get("google_alert_queries")),
         active,
+        web_scan_enabled: webScanEnabled,
+        web_scan_frequency: webScanFrequency,
+        max_sources_per_scan: maxSourcesPerScan,
         updated_at: new Date().toISOString()
       })
       .eq("id", id);
