@@ -17,7 +17,7 @@ async function authorized(request: Request) {
 
 async function runHybridScan(profileId?: string | null) {
   const { data: source } = await supabaseAdmin.from("sources").select("id").eq("name", "Hybrid Web Scanner").single();
-  let profileQuery = supabaseAdmin.from("search_profiles").select("*").eq("active", true);
+  let profileQuery = supabaseAdmin.from("search_profiles").select("*").eq("active", true).eq("web_scan_enabled", true);
   if (profileId) profileQuery = profileQuery.eq("id", profileId);
   const { data: profiles } = await profileQuery;
 
@@ -25,20 +25,31 @@ async function runHybridScan(profileId?: string | null) {
   let totalCreated = 0;
 
   for (const profile of profiles || []) {
+    const maxSources = Math.max(1, Number(profile.max_sources_per_scan || 10));
+    const sourcesToScan = (profile.source_domains || []).slice(0, maxSources);
     const { data: run } = await supabaseAdmin.from("web_scan_runs").insert({ search_profile_id: profile.id, status: "running" }).select("id").single();
     let checked = 0;
     let found = 0;
     let created = 0;
+    let skipped = 0;
     let errorMessage = "";
 
-    for (const sourceValue of profile.source_domains || []) {
+    for (const sourceValue of sourcesToScan) {
       try {
         checked += 1;
         const links = await scanSourceUrl(sourceValue, profile.keywords || [], profile.excluded_terms || []);
         found += links.length;
         for (const link of links) {
-          const { data: existing } = await supabaseAdmin.from("candidate_threads").select("id").eq("url", link.url).maybeSingle();
-          if (existing?.id) continue;
+          const { data: existingByHash } = await supabaseAdmin.from("candidate_threads").select("id").eq("url_hash", link.externalId).maybeSingle();
+          if (existingByHash?.id) {
+            skipped += 1;
+            continue;
+          }
+          const { data: existingByUrl } = await supabaseAdmin.from("candidate_threads").select("id").eq("url", link.url).maybeSingle();
+          if (existingByUrl?.id) {
+            skipped += 1;
+            continue;
+          }
           const relevance = scoreThread({ title: link.title, body: link.url, keywords: profile.keywords || [] });
           const { error } = await supabaseAdmin.from("candidate_threads").insert({
             monitoring_rule_id: null,
@@ -46,6 +57,7 @@ async function runHybridScan(profileId?: string | null) {
             project_id: profile.project_id,
             search_profile_id: profile.id,
             external_id: link.externalId,
+            url_hash: link.externalId,
             url: link.url,
             title: link.title,
             body_excerpt: `Found by Hybrid Web Scanner from ${link.sourceUrl}`,
@@ -60,23 +72,34 @@ async function runHybridScan(profileId?: string | null) {
             web_scan_run_id: run?.id,
             last_checked_at: new Date().toISOString()
           });
-          if (!error) created += 1;
+          if (error) {
+            skipped += 1;
+          } else {
+            created += 1;
+          }
         }
       } catch (error: any) {
         errorMessage += `${sourceValue}: ${error.message || String(error)}\n`;
       }
     }
 
+    const status = errorMessage ? "error" : "success";
     if (run?.id) {
       await supabaseAdmin.from("web_scan_runs").update({
         completed_at: new Date().toISOString(),
         sources_checked: checked,
         urls_found: found,
         candidates_created: created,
-        status: errorMessage ? "error" : "success",
+        status,
         error_message: errorMessage || null
       }).eq("id", run.id);
     }
+    await supabaseAdmin.from("search_profiles").update({
+      last_web_scan_at: new Date().toISOString(),
+      last_web_scan_status: `${status}: ${created} saved, ${skipped} skipped`,
+      last_web_scan_error: errorMessage || null
+    }).eq("id", profile.id);
+
     totalFound += found;
     totalCreated += created;
   }
