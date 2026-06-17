@@ -27,7 +27,7 @@ export default async function EditSearchProfilePage({ params, searchParams }: Pa
 
         <section className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h1 className="text-2xl font-bold">Edit Search Profile</h1>
-          <p className="mt-1 text-sm text-slate-600">Update the search rules for this specific topic or business.</p>
+          <p className="mt-1 text-sm text-slate-600">Update the search rules and hybrid scan settings for this profile.</p>
           {qs.saved ? <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Search profile saved.</p> : null}
           {qs.error ? <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">Missing required information.</p> : null}
 
@@ -59,6 +59,27 @@ export default async function EditSearchProfilePage({ params, searchParams }: Pa
               Voice instructions
               <textarea name="voice_instructions" defaultValue={profile.voice_instructions || ""} className="min-h-24 rounded-xl border border-slate-300 px-4 py-3 font-normal" />
             </label>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h2 className="font-bold">Hybrid Scan Settings</h2>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="web_scan_enabled" defaultChecked={profile.web_scan_enabled ?? true} /> Web scan enabled</label>
+                <label className="grid gap-1 text-sm font-semibold">
+                  Frequency
+                  <select name="web_scan_frequency" defaultValue={profile.web_scan_frequency || "daily"} className="rounded-xl border border-slate-300 px-4 py-3 font-normal">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="manual">Manual only</option>
+                  </select>
+                </label>
+                <label className="grid gap-1 text-sm font-semibold">
+                  Max sources per scan
+                  <input name="max_sources_per_scan" type="number" min="1" max="25" defaultValue={profile.max_sources_per_scan || 10} className="rounded-xl border border-slate-300 px-4 py-3 font-normal" />
+                </label>
+              </div>
+              <p className="mt-3 text-xs text-slate-500">Last scan: {profile.last_web_scan_at || "Never"} · {profile.last_web_scan_status || "No status yet"}</p>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <label className="grid gap-1 text-sm font-semibold">
                 Keywords, one per line
@@ -79,11 +100,6 @@ export default async function EditSearchProfilePage({ params, searchParams }: Pa
             </div>
             <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="active" defaultChecked={profile.active} /> Active</label>
             <button className="rounded-xl bg-cyan-600 px-4 py-3 font-semibold text-white hover:bg-cyan-700">Save Search Profile</button>
-          </form>
-
-          <form action={`/api/admin/search-profiles/${id}`} method="post" className="mt-6 border-t border-slate-200 pt-6">
-            <input type="hidden" name="_action" value="delete" />
-            <button className="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">Delete Search Profile</button>
           </form>
         </section>
       </div>
