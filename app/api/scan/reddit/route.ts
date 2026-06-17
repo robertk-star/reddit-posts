@@ -17,10 +17,15 @@ async function isAuthorized(request: Request) {
 }
 
 async function runScan() {
+  if (!process.env.REDDIT_CLIENT_ID) {
+    return { totalFound: 0, details: [{ ruleId: "reddit", status: "skipped", found: 0, error: "Reddit API is not configured. Use the Hybrid Scanner." }] };
+  }
+
   const { data: rules, error } = await supabaseAdmin
     .from("monitoring_rules")
-    .select("*, sources(*), projects(*)")
-    .eq("active", true);
+    .select("*, sources!inner(*), projects(*)")
+    .eq("active", true)
+    .eq("sources.type", "reddit_api");
 
   if (error) throw error;
 
@@ -28,21 +33,11 @@ async function runScan() {
   const details: Array<{ ruleId: string; status: string; found: number; error?: string }> = [];
 
   for (const rule of rules || []) {
-    const sourceType = rule.sources?.type;
     const startedAt = new Date().toISOString();
     let runId: string | null = null;
     try {
-      const { data: run } = await supabaseAdmin
-        .from("scan_runs")
-        .insert({ monitoring_rule_id: rule.id, started_at: startedAt, status: "running" })
-        .select("id")
-        .single();
+      const { data: run } = await supabaseAdmin.from("scan_runs").insert({ monitoring_rule_id: rule.id, started_at: startedAt, status: "running" }).select("id").single();
       runId = run?.id || null;
-
-      if (sourceType !== "reddit_api") {
-        throw new Error(`Unsupported source type in Phase 1: ${sourceType}`);
-      }
-
       const keywords: string[] = rule.keywords || [];
       const locations: string[] = rule.target_locations || [];
       let foundForRule = 0;
@@ -52,50 +47,35 @@ async function runScan() {
         for (const post of posts) {
           const relevance = scoreThread({ title: post.title, body: post.body, keywords });
           if (relevance.score < Number(rule.min_relevance_score || 0.45)) continue;
-
-          const { error: upsertError } = await supabaseAdmin.from("candidate_threads").upsert(
-            {
-              monitoring_rule_id: rule.id,
-              source_id: rule.source_id,
-              project_id: rule.project_id,
-              external_id: post.externalId,
-              url: post.url,
-              title: post.title,
-              body_excerpt: post.body?.slice(0, 1200) || "",
-              full_body: post.body || "",
-              author: post.author,
-              posted_at: post.postedAt,
-              subreddit: post.subreddit,
-              platform_score: post.score,
-              comment_count: post.commentCount,
-              relevance_score: relevance.score,
-              why_relevant: relevance.why,
-              risk_level: relevance.riskLevel,
-              last_checked_at: new Date().toISOString()
-            },
-            { onConflict: "source_id,external_id", ignoreDuplicates: false }
-          );
-
+          const { error: upsertError } = await supabaseAdmin.from("candidate_threads").upsert({
+            monitoring_rule_id: rule.id,
+            source_id: rule.source_id,
+            project_id: rule.project_id,
+            external_id: post.externalId,
+            url: post.url,
+            title: post.title,
+            body_excerpt: post.body?.slice(0, 1200) || "",
+            full_body: post.body || "",
+            author: post.author,
+            posted_at: post.postedAt,
+            subreddit: post.subreddit,
+            platform_score: post.score,
+            comment_count: post.commentCount,
+            relevance_score: relevance.score,
+            why_relevant: relevance.why,
+            risk_level: relevance.riskLevel,
+            last_checked_at: new Date().toISOString()
+          }, { onConflict: "source_id,external_id", ignoreDuplicates: false });
           if (upsertError) throw upsertError;
           foundForRule += 1;
         }
       }
 
       totalFound += foundForRule;
-      if (runId) {
-        await supabaseAdmin
-          .from("scan_runs")
-          .update({ completed_at: new Date().toISOString(), threads_found: foundForRule, status: "success" })
-          .eq("id", runId);
-      }
+      if (runId) await supabaseAdmin.from("scan_runs").update({ completed_at: new Date().toISOString(), threads_found: foundForRule, status: "success" }).eq("id", runId);
       details.push({ ruleId: rule.id, status: "success", found: foundForRule });
     } catch (err: any) {
-      if (runId) {
-        await supabaseAdmin
-          .from("scan_runs")
-          .update({ completed_at: new Date().toISOString(), status: "error", error_message: err.message || String(err) })
-          .eq("id", runId);
-      }
+      if (runId) await supabaseAdmin.from("scan_runs").update({ completed_at: new Date().toISOString(), status: "error", error_message: err.message || String(err) }).eq("id", runId);
       details.push({ ruleId: rule.id, status: "error", found: 0, error: err.message || String(err) });
     }
   }
@@ -104,21 +84,14 @@ async function runScan() {
 }
 
 export async function GET(request: Request) {
-  if (!(await isAuthorized(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const result = await runScan();
-  return NextResponse.json(result);
+  if (!(await isAuthorized(request))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json(await runScan());
 }
 
 export async function POST(request: Request) {
-  if (!(await isAuthorized(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!(await isAuthorized(request))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const result = await runScan();
   const accept = request.headers.get("accept") || "";
-  if (accept.includes("text/html")) {
-    return NextResponse.redirect(new URL(`/admin?scan=done&found=${result.totalFound}`, request.url), { status: 303 });
-  }
+  if (accept.includes("text/html")) return NextResponse.redirect(new URL(`/admin?scan=done&found=${result.totalFound}`, request.url), { status: 303 });
   return NextResponse.json(result);
 }
