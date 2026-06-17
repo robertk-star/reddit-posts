@@ -8,6 +8,8 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const projectId = String(form.get("project_id") || "");
     const sourceId = String(form.get("source_id") || "");
+    const active = String(form.get("active") || "") === "on";
+    const minRelevanceScore = Number(form.get("min_relevance_score") || 0.45);
     const keywords = String(form.get("keywords") || "")
       .split("\n")
       .map((v) => v.trim())
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
       .filter(Boolean);
 
     if (!projectId || !sourceId || keywords.length === 0 || targetLocations.length === 0) {
-      return NextResponse.redirect(new URL("/admin?error=missing-rule", request.url), { status: 303 });
+      return NextResponse.redirect(new URL("/admin/rules?error=missing-rule", request.url), { status: 303 });
     }
 
     const { error } = await supabaseAdmin.from("monitoring_rules").insert({
@@ -26,12 +28,12 @@ export async function POST(request: Request) {
       source_id: sourceId,
       keywords,
       target_locations: targetLocations,
-      min_relevance_score: 0.45,
-      active: true
+      min_relevance_score: minRelevanceScore,
+      active
     });
 
     if (error) throw error;
-    return NextResponse.redirect(new URL("/admin?created=rule", request.url), { status: 303 });
+    return NextResponse.redirect(new URL("/admin/rules?created=1", request.url), { status: 303 });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Unable to create monitoring rule" }, { status: 500 });
