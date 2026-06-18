@@ -31,10 +31,11 @@ export default async function AdminPage() {
   const highRisk = candidates.filter((item: any) => item.risk_level === "high");
 
   const cards = [
-    ["Run Hybrid Scan", "/admin/hybrid-scanner", "Scan active Search Profiles and create new opportunities."],
+    ["Run Hybrid Scan", "/admin/hybrid-scanner", "Scan active Search Profiles and Google Alert feeds."],
     ["Opportunities", "/admin/candidates", "Filter, draft, copy, skip, snooze, or mark items posted."],
+    ["Google Alert Feeds", "/admin/google-alert-feeds", "Save Google Alert feed URLs for automatic ingestion."],
     ["Quality Review", "/admin/quality", "Review quality scores, source hosts, and enrichment status."],
-    ["Google Alerts", "/admin/google-alerts", "Paste Google Alert results and dedupe them into the queue."],
+    ["Manual Google Alerts", "/admin/google-alerts", "Paste alert results only when a feed URL is unavailable."],
     ["Search Profiles", "/admin/search-profiles", "Manage separate searches for Disability, Background Screening, and more."],
     ["Monitoring Rules", "/admin/rules", "Add, edit, pause, or delete source rules."],
     ["UTM Builder", "/admin/tools/utm", "Create tracking links for manual replies."]
@@ -80,7 +81,7 @@ export default async function AdminPage() {
               {webRuns.map((run: any) => (
                 <div key={run.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
                   <div className="flex justify-between gap-3"><strong>{run.status}</strong><span>{dt(run.started_at)}</span></div>
-                  <p className="mt-1 text-slate-600">Checked {run.sources_checked || 0} sources · Found {run.urls_found || 0} URLs · Saved {run.candidates_created || 0}</p>
+                  <p className="mt-1 text-slate-600">Checked {run.sources_checked || 0} sources/feeds · Found {run.urls_found || 0} URLs · Saved {run.candidates_created || 0}</p>
                   {run.error_message ? <p className="mt-2 text-red-700">{run.error_message}</p> : null}
                 </div>
               ))}
@@ -88,12 +89,12 @@ export default async function AdminPage() {
           </section>
 
           <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-lg font-bold">Recent Google Alert Imports</h2>
+            <h2 className="text-lg font-bold">Recent Manual Google Alert Imports</h2>
             <div className="mt-4 space-y-3">
-              {alertImports.length === 0 ? <p className="text-sm text-slate-600">No Google Alert imports yet.</p> : null}
+              {alertImports.length === 0 ? <p className="text-sm text-slate-600">No manual Google Alert imports yet.</p> : null}
               {alertImports.map((item: any) => (
                 <div key={item.id} className="rounded-2xl border border-slate-200 p-4 text-sm">
-                  <div className="flex justify-between gap-3"><strong>Import</strong><span>{dt(item.created_at)}</span></div>
+                  <div className="flex justify-between gap-3"><strong>Manual Import</strong><span>{dt(item.created_at)}</span></div>
                   <p className="mt-1 text-slate-600">Found {item.urls_found || 0} URLs · Saved {item.candidates_created || 0}</p>
                 </div>
               ))}
